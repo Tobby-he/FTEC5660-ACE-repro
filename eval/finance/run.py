@@ -5,6 +5,7 @@ Example usage script for the ACE system.
 """
 import os
 import json
+import random
 import openai
 import argparse
 from datetime import datetime
@@ -87,10 +88,20 @@ def parse_args():
     parser.add_argument("--bulletpoint_analyzer_threshold", type=float, default=0.90,
                         help="Similarity threshold for bulletpoint analyzer (0-1, default: 0.90)")
     
+    # Subset configuration (for budget-limited reproduction; default = full splits)
+    parser.add_argument("--max_train", type=int, default=None,
+                        help="Use at most N training samples (seeded random subset)")
+    parser.add_argument("--max_val", type=int, default=None,
+                        help="Use at most N validation samples (seeded random subset)")
+    parser.add_argument("--max_test", type=int, default=None,
+                        help="Use at most N test samples (seeded random subset)")
+    parser.add_argument("--subset_seed", type=int, default=42,
+                        help="Seed for choosing subsets, so every trial sees the same samples")
+
     # Output configuration
     parser.add_argument("--save_path", type=str, required=True,
                         help="Directory to save results")
-    
+
     return parser.parse_args()
 
 def load_data(data_path: str):
@@ -168,6 +179,14 @@ def preprocess_data(task_name, config, mode):
     return train_samples, val_samples, test_samples, processor
 
 
+def take_subset(samples, max_n, seed):
+    """Return a seeded random subset of at most max_n samples, keeping original order."""
+    if samples is None or max_n is None or max_n >= len(samples):
+        return samples
+    keep = sorted(random.Random(seed).sample(range(len(samples)), max_n))
+    return [samples[i] for i in keep]
+
+
 def load_initial_playbook(path):
     """Load initial playbook if provided."""
     if path and os.path.exists(path):
@@ -197,7 +216,15 @@ def main():
         task_config[args.task_name],
         args.mode
     )
-        
+    train_samples = take_subset(train_samples, args.max_train, args.subset_seed)
+    val_samples = take_subset(val_samples, args.max_val, args.subset_seed)
+    test_samples = take_subset(test_samples, args.max_test, args.subset_seed)
+    if any(n is not None for n in (args.max_train, args.max_val, args.max_test)):
+        print(f"Subsets (seed={args.subset_seed}): "
+              f"train={len(train_samples) if train_samples else 0}, "
+              f"val={len(val_samples) if val_samples else 0}, "
+              f"test={len(test_samples) if test_samples else 0}\n")
+
     # Load initial playbook (or use empty if None provided)
     initial_playbook = load_initial_playbook(args.initial_playbook_path)
     if initial_playbook:
@@ -241,6 +268,10 @@ def main():
         'curator_batch_size': args.curator_batch_size,
         'curator_num_groups': args.curator_num_groups,
         'augmented_shuffling': args.augmented_shuffling,
+        'max_train': args.max_train,
+        'max_val': args.max_val,
+        'max_test': args.max_test,
+        'subset_seed': args.subset_seed,
     }
     
     # Execute using the unified run method
