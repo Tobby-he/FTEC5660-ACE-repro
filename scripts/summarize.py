@@ -100,7 +100,7 @@ def main():
         first = True
         for name, rows in per_metric.items():
             accs = [a for a, _, _ in rows]
-            scored = ", ".join(f"{s}/{e or '?'}" for _, s, e in rows if s is not None) or "-"
+            scored = ", ".join(f"{s}/{e}" if e else str(s) for _, s, e in rows if s is not None) or "-"
             usage_cols = (f"{calls} | {prompt:,} ({hit:,}) / {completion:,} | {cost:.2f} (total, {n_runs} runs) | {', '.join(sorted(served)) or '-'}"
                           if first else " | | | ")
             print(f"| {os.path.basename(exp.rstrip('/'))} | {name} | "
