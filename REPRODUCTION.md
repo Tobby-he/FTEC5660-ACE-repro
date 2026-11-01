@@ -53,11 +53,14 @@ Compute: laptop CPU only, with all inference through the DeepSeek API.
 | max_tokens | not stated | 4096 (repo default) |
 | Prompts / templates | repo prompts | unchanged |
 
-`deepseek-chat` is an alias, and DeepSeek may serve a newer checkpoint than V3.1
-under it. Every call now logs `served_model` and `system_fingerprint`, and
-`scripts/summarize.py` prints the served model. **Results are not directly
-comparable to the paper because the underlying LLM may differ.** Tasks, splits
-and the evaluation script are identical.
+`deepseek-chat` is an alias. Every call now logs `served_model` and
+`system_fingerprint`, and `scripts/summarize.py` prints the served model.
+
+**Verified 2026-11-01:** the official API's `/models` endpoint lists only
+`deepseek-flash` and `deepseek-v4-pro`. Requests for `deepseek-chat` come back
+with `"model": "deepseek-flash"`, and DeepSeek-V3.1 is no longer served there.
+**Results are not directly comparable to the paper because the underlying LLM
+differs.** Tasks, splits, prompts and the evaluation script are identical.
 
 ## Running
 
@@ -110,7 +113,39 @@ OpenAI-compatible mock server. All three modes were checked this way before any 
 
 ## Results
 
-_To fill in after runs: paste the `summarize.py` table and compare it with Table 2._
+### E1: Base LLM on Formula (empty playbook, full test split, 3 trials)
+
+| | Paper (DeepSeek-V3.1) | Ours (deepseek-chat → deepseek-flash) |
+|---|---|---|
+| Accuracy (%) | 67.5 | **70.3 ± 1.5** (69.0, 72.0, 70.0) |
+| Samples scored | 200 | 200 / 200 in every trial |
+| Tokens (3 trials) | – | 264k in (129k cache hit) / 136k out |
+| Cost (3 trials) | – | ≈ $0.10 |
+| Wall time per trial | – | 27–40 s (20 workers) |
+
+**The baseline reproduces approximately.** Our mean is 2.8 points above the paper's
+number, about two trial standard deviations. Given the model difference, that is
+a plausible model effect, not a pipeline discrepancy.
+
+**Non-determinism at temperature 0.** The three trials disagree. 52 questions are
+wrong in all three trials and 68 are wrong in at least one, so 16 questions flip between
+runs. A single-trial comparison of two variants on this split is therefore not
+meaningful below about ±3 points.
+
+**Most baseline errors are about answer conventions, not finance reasoning.**
+Error types in trial 1 (62 wrong answers):
+
+| Error type | Count | Example (pred vs gold) |
+|---|---|---|
+| ×100 scale: fraction given where a percent is expected (or vice versa) | 18 | `0.25` vs `25.0` |
+| Within 1%: rounding/precision mismatch | 11 | `14442.35` vs `14442.36` |
+| Other numeric (wrong formula or arithmetic) | 31 | `10652.59` vs `11717.85` |
+| Unparseable | 2 | – |
+
+About 47% of errors are convention mismatches with the gold labels. A playbook that
+learns "report percentages as 25.0, not 0.25" can fix these without any new financial
+knowledge. This is a likely mechanism for ACE's large +18.0 gain on Formula, and
+the hypothesis E2 will test.
 
 ## Modification
 
