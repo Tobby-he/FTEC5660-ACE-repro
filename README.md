@@ -1,5 +1,9 @@
 # Agentic Context Engineering: Evolving Contexts for Self-Improving Language Models
 
+> **FTEC5660 reproducibility fork.** Install and run steps, the target claim,
+> results and the modification are in [REPRODUCTION.md](REPRODUCTION.md).
+> Changes are on branch `repro` (`git log 82709de..repro`).
+
 <div align="left">
 
 <p align="left" style="display:flex; gap:18px;">
