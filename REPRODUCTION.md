@@ -80,21 +80,28 @@ export PROVIDER="--api_provider deepseek --generator_model deepseek-chat --refle
     --task_name formula --mode offline $PROVIDER \
     --max_train 200 --max_val 100 --eval_steps 50
 
-# E3  ACE online, Formula test split (adapts on the test stream)
-.venv/bin/python scripts/run_trials.py --tag formula_ace_online --trials 3 -- \
-    --task_name formula --mode online $PROVIDER
+# Modification  ACE offline without the Reflector (same settings as E2)
+.venv/bin/python scripts/run_trials.py --tag formula_ace_offline_noref --trials 3 -- \
+    --task_name formula --mode offline $PROVIDER \
+    --max_train 200 --max_val 100 --eval_steps 50 --no_reflector
 
 # Summary table (mean ± std, scored/requested, tokens, cost)
-.venv/bin/python scripts/summarize.py results/formula_base results/formula_ace_offline results/formula_ace_online
+.venv/bin/python scripts/summarize.py results/formula_base results/formula_ace_offline results/formula_ace_offline_noref
 ```
+
+Offline trials run one sample at a time (~50 min each for E2). The 3 trials of an
+experiment can run as parallel processes with `--trials 1 --start k` (k = 1, 2, 3).
 
 E2 also records `initial_test` (empty playbook) in every trial. That gives a second
 base-LLM measurement for free.
 
+Not run (time and budget): ACE online mode (`--mode online`) and FiNER (`--task_name finer`).
+Both work with the same commands.
+
 To test the pipeline without spending credits, point `DEEPSEEK_BASE_URL` at any
 OpenAI-compatible mock server. All three modes were checked this way before any paid run.
 
-## Hidden assumptions found so far
+## Hidden assumptions found
 
 1. **Reflection rounds and epochs.** The paper sets the maximum number of Reflector rounds and
    offline epochs to **5**, but the repo defaults to `--max_num_rounds 3 --num_epochs 1`.
