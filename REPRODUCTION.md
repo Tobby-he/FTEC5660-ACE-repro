@@ -4,7 +4,8 @@ Reproducibility study of **Agentic Context Engineering (ACE)**
 ([arXiv 2510.04618](https://arxiv.org/abs/2510.04618), upstream repo
 [ace-agent/ace](https://github.com/ace-agent/ace) @ `82709de`).
 
-All changes live on branch `repro`, one commit per change. Use `git log 82709de..repro` to review them.
+Repository: https://github.com/Tobby-he/FTEC5660-ACE-repro. All changes live on branch
+`repro` (the default branch), one commit per change. Use `git log 82709de..repro` to review them.
 
 ## Target claim
 
@@ -31,7 +32,7 @@ correct entities / total entities.
 ## Setup
 
 ```bash
-git clone <this repo> && cd <repo> && git checkout repro
+git clone https://github.com/Tobby-he/FTEC5660-ACE-repro.git && cd FTEC5660-ACE-repro
 python3.12 -m venv .venv
 .venv/bin/pip install "openai>=1.0.0" "python-dotenv>=1.0.0" "tiktoken>=0.12.0" numpy
 cp .env.example .env   # then set DEEPSEEK_API_KEY=...
