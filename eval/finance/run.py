@@ -81,7 +81,9 @@ def parse_args():
                         help="Enable JSON mode for LLM calls")
     parser.add_argument("--no_ground_truth", action="store_true",
                         help="Don't use ground truth in reflection")
-    
+    parser.add_argument("--no_reflector", action="store_true",
+                        help="Ablation: skip the Reflector; the Curator sees the raw attempt and feedback")
+
     # Bulletpoint analyzer configuration
     parser.add_argument("--use_bulletpoint_analyzer", action="store_true",
                         help="Enable bulletpoint analyzer for deduplication and merging")
@@ -232,6 +234,9 @@ def main():
     else:
         print("Using empty playbook as initial playbook\n")
     
+    if args.no_reflector and args.batch_size > 1:
+        raise ValueError("--no_reflector is only implemented for batch_size 1")
+
     # Batched training when batch_size > 1
     AceCls = ACEBatch if args.batch_size > 1 else ACE
     ace_system = AceCls(
@@ -258,6 +263,7 @@ def main():
         'mode': args.mode,
         'json_mode': args.json_mode,
         'no_ground_truth': args.no_ground_truth,
+        'no_reflector': args.no_reflector,
         'save_dir': args.save_path,
         'test_workers': args.test_workers,
         'initial_playbook_path': args.initial_playbook_path,

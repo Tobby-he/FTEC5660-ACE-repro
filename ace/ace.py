@@ -128,6 +128,7 @@ class ACE:
             'task_name': config.get('task_name', 'default'),
             'use_json_mode': config.get('json_mode', False),
             'no_ground_truth': config.get('no_ground_truth', False),
+            'no_reflector': config.get('no_reflector', False),
             'save_dir': config.get('save_dir', './results'),
             'test_workers': config.get('test_workers', 20),
             'use_bulletpoint_analyzer': config.get('use_bulletpoint_analyzer', False),
@@ -494,9 +495,23 @@ class ACE:
         }
         
         reflection_content = "(empty)"
-        
+
+        # STEP 2 (ablation): no Reflector - hand the raw attempt and feedback straight
+        # to the Curator; no reflection rounds and no helpful/harmful bullet tagging
+        if config_params['no_reflector']:
+            feedback = ("Predicted answer matches ground truth" if is_correct
+                        else "Predicted answer does not match ground truth")
+            reflection_content = (
+                f"(No reflector: raw attempt shown)\n"
+                f"Question: {question}\n"
+                f"Model reasoning and answer: {gen_response}\n"
+                f"Predicted answer: {final_answer}\n"
+                + (f"Ground truth: {target}\n" if not no_ground_truth else "")
+                + f"Environment feedback: {feedback}"
+            )
+
         # STEP 2: Reflection and regeneration
-        if not is_correct:
+        elif not is_correct:
             # For incorrect answers - iterate reflection rounds
             for round_num in range(max_num_rounds):
                 print(f"Reflection round {round_num + 1}/{max_num_rounds}")
